@@ -10,8 +10,8 @@ app = Typer()
 
 
 @app.command()
-def export(database_url: str, path: str = "./export"):
-    ex = Exporter(Path(path))
+def export(database_url: str, path: Path = Path("./export")):
+    ex = Exporter(path)
     ex.load_entries(Solr(database_url))
     ex.write_bundle()
 
