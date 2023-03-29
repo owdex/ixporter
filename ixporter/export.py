@@ -10,6 +10,7 @@ import jsonlines
 class Exporter:
     def __init__(self, path: Path, entry_split: int = 100, db: Solr|None = None):
         self.path = path
+        self.path.mkdir(parents=True, exist_ok=True)
         self.entry_split = entry_split
         if db:
             self.load_entries(db)
@@ -37,9 +38,3 @@ class Exporter:
         """Split entries into batches, and write a bundle of those files with a manifest."""
         for batch in batched(self.entries, self.entry_split):
             self._write_batch(batch)
-
-ex = Exporter(
-    Path("."),
-    db = Solr("http://localhost:8983/solr/gettingstarted")
-)
-ex.write_bundle()
