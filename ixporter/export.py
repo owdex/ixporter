@@ -1,5 +1,5 @@
 from io import BytesIO
-from hashlib import file_digest as digest
+from hashlib import md5
 from pathlib import Path
 
 import more_itertools
@@ -10,13 +10,14 @@ import jsonlines
 
 def write_batch(entries: Sequence[dict], directory: Path) -> Path:
     """Write entries to a single JSONlines batch file."""
-    with BytesIO() as buffer:
-        with jsonlines.Writer(buffer) as writer:
+    with BytesIO() as buffer_file:
+        with jsonlines.Writer(buffer_file) as writer:
             writer.write_all(entries)
 
-        filename = f"{digest(buffer, 'md5').hexdigest()}.jsonl"
+        buffer = buffer_file.getbuffer()
+        filename = f"{md5(buffer)}.jsonl"
         file = directory / filename
-        file.write_bytes(buffer.getbuffer())
+        file.write_bytes(buffer)
 
     return file
 
