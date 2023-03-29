@@ -2,8 +2,7 @@ from io import StringIO
 from hashlib import md5
 from pathlib import Path
 from typing import Sequence
-
-import more_itertools
+from more_itertools import batched
 
 from pysolr import Solr
 import jsonlines
@@ -36,7 +35,7 @@ class Exporter:
 
     def write_bundle(self):
         """Split entries into batches, and write a bundle of those files with a manifest."""
-        for batch in more_itertools.batched(self.entries, self.entry_split):
+        for batch in batched(self.entries, self.entry_split):
             self._write_batch(batch)
 
 ex = Exporter(
