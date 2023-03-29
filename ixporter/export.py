@@ -16,11 +16,11 @@ def write_batch(entries: Sequence[dict], directory: Path) -> Path:
             writer.write(entries)
 
         buffer_value = buffer.getvalue()
-        filename = f"{md5(buffer_value.encode()).hexdigest()}.jsonl"
-        file = directory / filename
-        file.write_text(buffer_value)
+        file_path = directory / f"{md5(buffer_value.encode()).hexdigest()}.jsonl"
+        with file_path.open('w+') as file:
+            file.write(buffer_value)
 
-    return file
+    return file_path
 
 def write_bundle(entries: Sequence[dict], directory: Path, split: int = 100) -> Path:
     """Split entries into batches, and write a bundle of those files with a manifest."""
