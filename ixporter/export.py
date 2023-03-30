@@ -8,7 +8,7 @@ from pysolr import Solr
 import jsonlines
 
 class Exporter:
-    def __init__(self, path: Path, , db: Solr, entry_split: int = 100):
+    def __init__(self, path: Path, db: Solr, entry_split: int = 100):
         self.version = "0.1"
         self.path = path
         self.path.mkdir(parents=True, exist_ok=True)

@@ -11,8 +11,7 @@ app = Typer()
 
 @app.command()
 def export(database_url: str, path: Path = Path("./export")):
-    ex = Exporter(path)
-    ex.load_entries(Solr(database_url))
+    ex = Exporter(path, Solr(database_url))
     ex.write_bundle()
 
 app.command()
