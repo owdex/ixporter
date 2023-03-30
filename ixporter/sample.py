@@ -35,6 +35,9 @@ def load_sample_data(db: Solr, lines: int):
 
                     # if there was a description, set that, otherwise just use content
                     description = description.get("content") if description else content
+
+                    if len(description) > 150:
+                        description = description[:149] + "&hellip;"
                     
                     db.add({
                         "url": url,
