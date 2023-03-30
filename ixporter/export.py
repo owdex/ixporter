@@ -8,33 +8,40 @@ from pysolr import Solr
 import jsonlines
 
 class Exporter:
-    def __init__(self, path: Path, entry_split: int = 100, db: Solr|None = None):
+    def __init__(self, path: Path, , db: Solr, entry_split: int = 100):
+        self.version = "0.1"
         self.path = path
         self.path.mkdir(parents=True, exist_ok=True)
         self.entry_split = entry_split
-        if db:
-            self.load_entries(db)
-
-    
-    def load_entries(self, db: Solr):
         self.entries = db.search("*:*").docs
+
     
-
-    def _write_batch(self, batch: list) -> Path:
-        """Write entries to a single JSONlines batch file."""
-        with StringIO() as buffer:
-            with jsonlines.Writer(buffer) as writer:
-                writer.write(batch)
-
-            buffer_value = buffer.getvalue()
-            file_path = self.path / f"{md5(buffer_value.encode()).hexdigest()}.jsonl"
-            with file_path.open('w+') as file:
-                file.write(buffer_value)
-
-        return file_path
+    def _get_bundle_checksum(self):
+        checksum = md5()
+        for batch in self.path.iterdir():
+            checksum.update(batch.name.encode())
+        return checksum
 
 
     def write_bundle(self):
         """Split entries into batches, and write a bundle of those files with a manifest."""
         for batch in batched(self.entries, self.entry_split):
-            self._write_batch(batch)
+            with StringIO() as buffer:
+                with jsonlines.Writer(buffer) as writer:
+                    writer.write(batch)
+
+                buffer_value = buffer.getvalue()
+                file_path = self.path / f"{md5(buffer_value.encode()).hexdigest()}.jsonl"
+                with file_path.open('w+') as file:
+                    file.write(buffer_value)
+
+        manifest_path = self.path / "manifest.json"
+        with jsonlines.Writer(manifest_path.open(mode = "w+")) as writer:
+            writer.write({
+            "version": self.version,
+            "records": len(self.entries),
+            "checksums": {
+                "md5": self._get_bundle_checksum().hexdigest(),
+            },
+            "compression": "None"
+        })
