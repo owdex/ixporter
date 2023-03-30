@@ -2,28 +2,22 @@ import csv
 import zipfile as zf
 from io import BytesIO, TextIOWrapper
 
-from rich.progress import track, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from bs4 import BeautifulSoup as bs
 from pysolr import Solr
 import requests
 
 def load_sample_data(db: Solr, lines: int):
-    with Progress(
-        SpinnerColumn(),
-        *Progress.get_default_columns(),
-        TimeElapsedColumn(),
-    ) as progress:
-
-        download_task = progress.add_task(description="Downloading corpus...", total=None)
+        print("Downloading corpus (this should take less than a minute)...")
         corpus_zip = requests.get("https://www.corpusdata.org/iweb/samples/iweb_sources.zip")
-        progress.update(download_task, visible=False)
 
+        print("Extracting...")
         with zf.ZipFile(BytesIO(corpus_zip.content)) as unzipper:
             with open(unzipper.extract("iweb_sources.txt", path="/tmp"), encoding="latin_1") as corpus_file:
+                print("Reading...")
                 corpus = corpus_file.readlines()[:lines]
                 reader = csv.reader(corpus, delimiter="\t")
 
-                read_task = progress.add_task(description="Adding entries...", total=lines)
+                print("Loading entries...")
                 for entry in reader:
 
                     url = entry[3]
@@ -46,6 +40,7 @@ def load_sample_data(db: Solr, lines: int):
                         "content": content,
                         "description": description
                     })
-                    progress.update(read_task, advance=1)
         
+        print("Committing...")
         db.commit()
+        print("Done!")
