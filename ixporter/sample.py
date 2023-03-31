@@ -1,6 +1,7 @@
 import csv
 import zipfile as zf
 from io import BytesIO, TextIOWrapper
+from random import sample as random_sample
 
 from bs4 import BeautifulSoup as bs
 from pysolr import Solr
@@ -14,7 +15,7 @@ def load_sample_data(db: Solr, lines: int):
         with zf.ZipFile(BytesIO(corpus_zip.content)) as unzipper:
             with open(unzipper.extract("iweb_sources.txt", path="/tmp"), encoding="latin_1") as corpus_file:
                 print("Reading...")
-                corpus = corpus_file.readlines()[:lines]
+                corpus = random_sample(corpus_file.readlines(), lines)
                 reader = csv.reader(corpus, delimiter="\t")
 
                 print("Loading entries...")
