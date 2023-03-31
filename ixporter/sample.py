@@ -1,6 +1,7 @@
 import csv
 import zipfile as zf
 from io import BytesIO, TextIOWrapper
+from random import sample as random_sample
 
 from bs4 import BeautifulSoup as bs
 from pysolr import Solr
@@ -14,7 +15,7 @@ def load_sample_data(db: Solr, lines: int):
         with zf.ZipFile(BytesIO(corpus_zip.content)) as unzipper:
             with open(unzipper.extract("iweb_sources.txt", path="/tmp"), encoding="latin_1") as corpus_file:
                 print("Reading...")
-                corpus = corpus_file.readlines()[:lines]
+                corpus = random_sample(corpus_file.readlines(), lines)
                 reader = csv.reader(corpus, delimiter="\t")
 
                 print("Loading entries...")
@@ -23,23 +24,26 @@ def load_sample_data(db: Solr, lines: int):
                     url = entry[3]
                     title = entry[4]
 
-                    soup = bs(requests.get(url).text, features="html.parser")
-                    content = soup.get_text()
-                    description = soup.find("meta", attrs={"name": "description"})
+                    try:
+                        soup = bs(requests.get(url, timeout=5).text, features="html.parser")
+                        content = soup.get_text()
+                        description = soup.find("meta", attrs={"name": "description"})
 
-                    # if there was a description, set that, otherwise just use content
-                    description = description.get("content") if description else content
+                        # if there was a description, set that, otherwise just use content
+                        description = description.get("content") if description else content
 
-                    if len(description) > 150:
-                        description = description[:149] + "&hellip;"
-                    
-                    db.add({
-                        "url": url,
-                        "title": title,
-                        "submitter": "sampler",
-                        "content": content,
-                        "description": description
-                    })
+                        if len(description) > 150:
+                            description = description[:149] + "&hellip;"
+                    except requests.exceptions.RequestException:
+                        print(f"Warning: problem connecting to {url}")
+                    else:
+                        db.add({
+                            "url": url,
+                            "title": title,
+                            "submitter": "sampler",
+                            "content": content,
+                            "description": description
+                        })
         
         print("Committing...")
         db.commit()
