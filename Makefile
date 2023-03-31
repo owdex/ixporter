@@ -10,11 +10,16 @@ venv: $(VENV_DIR)/pyvenv.cfg
 
 dist/ixporter: venv
 	$(VENV_DIR)/bin/pip install pyinstaller
-	pyinstaller --onefile --name ixporter ixporter/__main__.py
+	$(VENV_DIR)/bin/pyinstaller --onefile --name ixporter ixporter/__main__.py
 
 build: dist/ixporter
 
 clean: 
 	rm -rf $(VENV_DIR) build dist ixporter.spec
 
-.PHONY: all build venv
+/usr/local/bin/ixporter: dist/ixporter
+	sudo mv dist/ixporter /usr/local/bin/ixporter
+
+install: /usr/local/bin/ixporter
+
+.PHONY: all build venv install
