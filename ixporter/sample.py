@@ -27,6 +27,7 @@ def load_sample_data(db: Solr, lines: int):
                     try:
                         soup = bs(requests.get(url, timeout=5).text, features="html.parser")
                         content = soup.get_text()
+                        if not content: raise ValueError
                         description = soup.find("meta", attrs={"name": "description"})
 
                         # if there was a description, set that, otherwise just use content
@@ -36,6 +37,8 @@ def load_sample_data(db: Solr, lines: int):
                             description = description[:149] + "&hellip;"
                     except requests.exceptions.RequestException:
                         print(f"Warning: problem connecting to {url}")
+                    except ValueError:
+                        print(f"Warning: {url} had no content and was ignored")
                     else:
                         db.add({
                             "url": url,
