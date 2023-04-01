@@ -31,7 +31,7 @@ def load_sample_data(db: Solr, lines: int):
                         description = soup.find("meta", attrs={"name": "description"})
 
                         # if there was a description, set that, otherwise just use content
-                        description = description.get("content") if description else content
+                        description = description.get("content") if description and description.get("content") else content
 
                         if len(description) > 150:
                             description = description[:149] + "&hellip;"
