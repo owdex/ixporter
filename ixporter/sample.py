@@ -45,7 +45,8 @@ def load_sample_data(db: Solr, lines: int):
                             "title": title,
                             "submitter": "sampler",
                             "content": content,
-                            "description": description
+                            "description": description,
+                            "votes": 1
                         })
         
         print("Committing...")
