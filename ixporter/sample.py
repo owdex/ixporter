@@ -7,48 +7,86 @@ from bs4 import BeautifulSoup as bs
 from pysolr import Solr
 import requests
 
-def load_sample_data(db: Solr, lines: int):
-        print("Downloading corpus (this should take less than a minute)...")
-        corpus_zip = requests.get("https://www.corpusdata.org/iweb/samples/iweb_sources.zip")
+from concurrent.futures import ThreadPoolExecutor
+import itertools
 
-        print("Extracting...")
-        with zf.ZipFile(BytesIO(corpus_zip.content)) as unzipper:
-            with open(unzipper.extract("iweb_sources.txt", path="/tmp"), encoding="latin_1") as corpus_file:
-                print("Reading...")
+
+def _import_url(entry, db, timeout):
+    url = entry[3]
+    title = entry[4]
+
+    try:
+        soup = bs(requests.get(url, timeout=timeout).text, features="html.parser")
+        content = soup.get_text()
+        if not content:
+            raise ValueError
+        description = soup.find("meta", attrs={"name": "description"})
+
+        # if there was a description, set that, otherwise just use content
+        description = (
+            description.get("content")
+            if description and description.get("content")
+            else content
+        )
+
+        if len(description) > 150:
+            description = description[:149] + "&hellip;"
+    except requests.exceptions.RequestException as e:
+        print(f"Warning: problem connecting to {url}")
+        print(e)
+    except ValueError as e:
+        print(f"Warning: {url} had no content and was ignored")
+        print(e)
+    else:
+        print(f"Success with {url}")
+        db.add(
+            {
+                "url": url,
+                "title": title,
+                "submitter": "sampler",
+                "content": content,
+                "description": description,
+                "votes": 1,
+            }
+        )
+
+
+def load_sample_data(db: Solr, lines: int, timeout: int, threads: int):
+    print("Downloading corpus (this should take less than a minute)...")
+    corpus_zip = requests.get(
+        "https://www.corpusdata.org/iweb/samples/iweb_sources.zip"
+    )
+
+    print("Extracting...")
+    with zf.ZipFile(BytesIO(corpus_zip.content)) as unzipper:
+        with open(
+            unzipper.extract("iweb_sources.txt", path="/tmp"), encoding="latin_1"
+        ) as corpus_file:
+            print("Reading...")
+
+            if lines == 0:
+                corpus = corpus_file.readlines()
+            else:
                 corpus = random_sample(corpus_file.readlines(), lines)
-                reader = csv.reader(corpus, delimiter="\t")
 
-                print("Loading entries...")
-                for entry in reader:
+            reader = csv.reader(corpus, delimiter="\t")
 
-                    url = entry[3]
-                    title = entry[4]
+            print("Loading entries...")
 
-                    try:
-                        soup = bs(requests.get(url, timeout=5).text, features="html.parser")
-                        content = soup.get_text()
-                        if not content: raise ValueError
-                        description = soup.find("meta", attrs={"name": "description"})
+            list_of_groups = zip(*(iter(reader),) * 1000)
 
-                        # if there was a description, set that, otherwise just use content
-                        description = description.get("content") if description and description.get("content") else content
+            for batch in list_of_groups:
+                with ThreadPoolExecutor(max_workers=threads) as executor:
+                    executor.map(
+                        _import_url,
+                        batch,
+                        itertools.repeat(db),
+                        itertools.repeat(timeout),
+                    )
 
-                        if len(description) > 150:
-                            description = description[:149] + "&hellip;"
-                    except requests.exceptions.RequestException:
-                        print(f"Warning: problem connecting to {url}")
-                    except ValueError:
-                        print(f"Warning: {url} had no content and was ignored")
-                    else:
-                        db.add({
-                            "url": url,
-                            "title": title,
-                            "submitter": "sampler",
-                            "content": content,
-                            "description": description,
-                            "votes": 1
-                        })
-        
-        print("Committing...")
-        db.commit()
-        print("Done!")
+                print("Committing...")
+                db.commit()
+
+    print("Committing...")
+    db.commit()
+    print("Done!")

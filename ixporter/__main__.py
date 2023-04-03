@@ -24,8 +24,8 @@ def import_(database_url: str):
     pass
 
 @app.command()
-def sample(database_url: str, lines: int = 25):
-    load_sample_data(Solr(database_url), lines)
+def sample(database_url: str, lines: int = 25, timeout: int = 1, threads: int = 150):
+    load_sample_data(Solr(database_url), lines, timeout, threads)
 
 
 if __name__ == "__main__":
