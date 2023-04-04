@@ -18,18 +18,16 @@ def _import_url(entry, db, timeout):
     title = entry[4]
 
     try:
-        soup = bs(requests.get(url, timeout=timeout).text, features="html.parser")
+        soup = bs(requests.get(url, timeout=timeout).text,
+                  features="html.parser")
         content = soup.get_text()
         if not content:
             raise ValueError
         description = soup.find("meta", attrs={"name": "description"})
 
         # if there was a description, set that, otherwise just use content
-        description = (
-            description.get("content")
-            if description and description.get("content")
-            else content
-        )
+        description = (description.get("content") if description
+                       and description.get("content") else content)
 
         if len(description) > 150:
             description = description[:149] + "&hellip;"
@@ -42,29 +40,25 @@ def _import_url(entry, db, timeout):
     else:
         if STATE["verbose"]:
             print(f"Success with {url}")
-        db.add(
-            {
-                "url": url,
-                "title": title,
-                "submitter": "sampler",
-                "content": content,
-                "description": description,
-                "votes": 1,
-            }
-        )
+        db.add({
+            "url": url,
+            "title": title,
+            "submitter": "sampler",
+            "content": content,
+            "description": description,
+            "votes": 1,
+        })
 
 
 def load_sample_data(db: Solr, lines: int, timeout: int, threads: int):
     print("Downloading corpus (this should take less than a minute)...")
     corpus_zip = requests.get(
-        "https://www.corpusdata.org/iweb/samples/iweb_sources.zip"
-    )
+        "https://www.corpusdata.org/iweb/samples/iweb_sources.zip")
 
     print("Extracting...")
     with zf.ZipFile(BytesIO(corpus_zip.content)) as unzipper:
-        with open(
-            unzipper.extract("iweb_sources.txt", path="/tmp"), encoding="latin_1"
-        ) as corpus_file:
+        with open(unzipper.extract("iweb_sources.txt", path="/tmp"),
+                  encoding="latin_1") as corpus_file:
             print("Reading...")
 
             if lines == 0:
@@ -76,7 +70,7 @@ def load_sample_data(db: Solr, lines: int, timeout: int, threads: int):
 
             print("Loading entries...")
 
-            list_of_groups = zip(*(iter(reader),) * 1000)
+            list_of_groups = zip(*(iter(reader), ) * 1000)
 
             for batch in list_of_groups:
                 with ThreadPoolExecutor(max_workers=threads) as executor:

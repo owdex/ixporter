@@ -9,7 +9,6 @@ from ixporter import Exporter
 from ixporter.sample import load_sample_data
 from ixporter.__init__ import STATE
 
-
 app = Typer()
 
 def error(message: str):
@@ -24,12 +23,13 @@ def export(database_url: str, path: Path = Path("./export")):
 def import_(database_url: str):
     pass
 
+
 @app.command()
 def sample(
-    database_url: str,
-    lines: int = Argument(25),
-    timeout: int = Argument(1),
-    threads: int = Argument(150),
+        database_url: str,
+        lines: int = Argument(25),
+        timeout: int = Argument(1),
+        threads: int = Argument(150),
 ):
     load_sample_data(Solr(database_url), lines, timeout, threads)
 
