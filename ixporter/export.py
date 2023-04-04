@@ -15,6 +15,7 @@ import jsonlines
 
 
 class Exporter:
+
     def __init__(self, path: Path, db: Solr, entry_split: int = 100):
         self.version = "0.1"
         self.path = path
@@ -37,14 +38,16 @@ class Exporter:
 
     def _id_generator(self):
         """creates 8 long random sequences of ascii chars. To be used for temporary files"""
-        return "".join(random.choices(string.ascii_uppercase + string.digits, k=8))
+        return "".join(
+            random.choices(string.ascii_uppercase + string.digits, k=8))
 
     def _create_bundle(self, records):
         """Takes a list of records and writes out a bundle file
         Returns information about the bundle file, for inclusion in the manifest
         """
 
-        tmpfilepath = Path(f"{self.tmpdir.name}/tmp_{self._id_generator()}.jsonl.gz")
+        tmpfilepath = Path(
+            f"{self.tmpdir.name}/tmp_{self._id_generator()}.jsonl.gz")
         tmpfilepath.touch()
         # Todo: consider different compression algorithms
         with gzip.open(tmpfilepath, mode="wb") as file:
