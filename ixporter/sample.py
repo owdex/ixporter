@@ -10,6 +10,8 @@ import requests
 from concurrent.futures import ThreadPoolExecutor
 import itertools
 
+from ixporter.__init__ import STATE
+
 
 def _import_url(entry, db, timeout):
     url = entry[3]
@@ -31,14 +33,15 @@ def _import_url(entry, db, timeout):
 
         if len(description) > 150:
             description = description[:149] + "&hellip;"
-    except requests.exceptions.RequestException as e:
-        print(f"Warning: problem connecting to {url}")
-        print(e)
-    except ValueError as e:
-        print(f"Warning: {url} had no content and was ignored")
-        print(e)
+    except requests.exceptions.RequestException:
+        if STATE["verbose"]:
+            print(f"Warning: problem connecting to {url}")
+    except ValueError:
+        if STATE["verbose"]:
+            print(f"Warning: {url} had no content and was ignored")
     else:
-        print(f"Success with {url}")
+        if STATE["verbose"]:
+            print(f"Success with {url}")
         db.add(
             {
                 "url": url,
